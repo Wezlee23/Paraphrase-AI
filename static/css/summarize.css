@@ -1,0 +1,67 @@
+/* ===================================
+   Paraphrase AI - Summarizer Page Styles
+   =================================== */
+
+/* Page-specific accent colors - Teal/Cyan */
+:root {
+    --accent-gradient-start: #11998e;
+    --accent-gradient-end: #38ef7d;
+}
+
+/* Animated orbs - teal theme */
+body::before {
+    width: 400px;
+    height: 400px;
+    background: var(--accent-gradient-start);
+    top: -100px;
+    left: -100px;
+}
+
+body::after {
+    width: 350px;
+    height: 350px;
+    background: var(--accent-gradient-end);
+    bottom: -100px;
+    right: -100px;
+    animation-delay: -4s;
+}
+
+/* Gradient text for header */
+.header h1 span {
+    background: linear-gradient(135deg, var(--accent-gradient-start), var(--accent-gradient-end));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+/* Active nav link underline */
+.nav-link.active::after {
+    content: '';
+    position: absolute;
+    bottom: -4px;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, var(--accent-gradient-start), var(--accent-gradient-end));
+    border-radius: 1px;
+}
+
+/* Submit button gradient */
+.submit-btn {
+    background: linear-gradient(135deg, var(--accent-gradient-start), var(--accent-gradient-end));
+}
+
+.submit-btn:hover {
+    box-shadow: 0 10px 40px -10px rgba(17, 153, 142, 0.5);
+}
+
+/* Footer link color */
+.footer a {
+    color: var(--accent-gradient-start);
+}
+
+/* Result text for bullet points */
+.result-text {
+    white-space: pre-wrap;
+    line-height: 1.8;
+}

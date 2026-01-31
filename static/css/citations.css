@@ -1,0 +1,130 @@
+/* ===================================
+   Paraphrase AI - Citation Generator Page Styles
+   =================================== */
+
+/* Page-specific accent colors - Blue */
+:root {
+    --accent-gradient-start: #4facfe;
+    --accent-gradient-end: #00f2fe;
+}
+
+/* Animated orbs - blue theme */
+body::before {
+    width: 400px;
+    height: 400px;
+    background: var(--accent-gradient-start);
+    top: -100px;
+    right: -100px;
+}
+
+body::after {
+    width: 350px;
+    height: 350px;
+    background: var(--accent-gradient-end);
+    bottom: -100px;
+    left: -100px;
+    animation-delay: -4s;
+}
+
+/* Gradient text for header */
+.header h1 span {
+    background: linear-gradient(135deg, var(--accent-gradient-start), var(--accent-gradient-end));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+/* Active nav link underline */
+.nav-link.active::after {
+    content: '';
+    position: absolute;
+    bottom: -4px;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, var(--accent-gradient-start), var(--accent-gradient-end));
+    border-radius: 1px;
+}
+
+/* Submit button gradient */
+.submit-btn {
+    background: linear-gradient(135deg, var(--accent-gradient-start), var(--accent-gradient-end));
+    color: #1a1a2e;
+}
+
+.submit-btn:hover {
+    box-shadow: 0 10px 40px -10px rgba(79, 172, 254, 0.5);
+}
+
+/* Footer link color */
+.footer a {
+    color: var(--accent-gradient-start);
+}
+
+/* Select dropdown styling */
+.select-wrapper {
+    position: relative;
+    display: inline-block;
+    width: 100%;
+}
+
+.style-select {
+    width: 100%;
+    padding: 1rem 3rem 1rem 1rem;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 0.875rem;
+    color: var(--text-primary);
+    font-family: 'Inter', sans-serif;
+    font-size: 1rem;
+    cursor: pointer;
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.style-select:focus {
+    outline: none;
+    border-color: var(--accent-gradient-start);
+    box-shadow: 0 0 0 3px rgba(79, 172, 254, 0.2);
+}
+
+.style-select option {
+    background: #1a1a2e;
+    color: var(--text-primary);
+    padding: 0.5rem;
+}
+
+.select-arrow {
+    position: absolute;
+    right: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 20px;
+    height: 20px;
+    color: var(--text-muted);
+    pointer-events: none;
+}
+
+/* Formatted citations styling */
+.formatted-citations {
+    white-space: pre-wrap;
+    line-height: 1.8;
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.formatted-citations::-webkit-scrollbar {
+    width: 6px;
+}
+
+.formatted-citations::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 3px;
+}
+
+.formatted-citations::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 3px;
+}

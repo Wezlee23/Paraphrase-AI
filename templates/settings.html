@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Settings | Paraphrase AI</title>
+    <meta name="description" content="Configure your Paraphrase AI workspace settings.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/settings.css') }}">
+</head>
+
+<body>
+    <div class="settings-app">
+        <!-- Header -->
+        <header class="settings-header">
+            <div class="header-left">
+                <a href="/workspace" class="back-btn" title="Back to Workspace">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="15 18 9 12 15 6"></polyline>
+                    </svg>
+                </a>
+                <h1>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="3"></circle>
+                        <path
+                            d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z">
+                        </path>
+                    </svg>
+                    Settings
+                </h1>
+            </div>
+            <div class="header-right">
+                <button class="btn-reset" onclick="resetSettings()" title="Reset to Defaults">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="1 4 1 10 7 10"></polyline>
+                        <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
+                    </svg>
+                    Reset
+                </button>
+                <button class="btn-save" onclick="saveSettings()" id="saveBtn">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                        <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                        <polyline points="7 3 7 8 15 8"></polyline>
+                    </svg>
+                    Save Settings
+                </button>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="settings-content">
+            <!-- Storage Settings -->
+            <section class="settings-section">
+                <div class="section-header">
+                    <div class="section-icon storage">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z">
+                            </path>
+                        </svg>
+                    </div>
+                    <div class="section-title">
+                        <h2>Storage Settings</h2>
+                        <p>Configure file storage locations and limits</p>
+                    </div>
+                </div>
+                <div class="section-content">
+                    <div class="setting-item">
+                        <label for="uploadFolder">Upload Folder</label>
+                        <div class="input-group">
+                            <input type="text" id="uploadFolder" name="uploadFolder" value="{{ config.upload_folder }}">
+                            <span class="input-hint">Path for uploaded files (relative to app directory)</span>
+                        </div>
+                    </div>
+                    <div class="setting-item">
+                        <label for="tempFolder">Temp Folder</label>
+                        <div class="input-group">
+                            <input type="text" id="tempFolder" name="tempFolder" value="{{ config.temp_folder }}">
+                            <span class="input-hint">Path for temporary files like exports</span>
+                        </div>
+                    </div>
+                    <div class="setting-item">
+                        <label for="maxFileSize">Max File Size (MB)</label>
+                        <div class="input-group">
+                            <input type="number" id="maxFileSize" name="maxFileSize" value="{{ config.max_file_size }}"
+                                min="1" max="500">
+                            <span class="input-hint">Maximum upload file size in megabytes</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- API Settings -->
+            <section class="settings-section">
+                <div class="section-header">
+                    <div class="section-icon api">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 2L2 7l10 5 10-5-10-5z"></path>
+                            <path d="M2 17l10 5 10-5"></path>
+                            <path d="M2 12l10 5 10-5"></path>
+                        </svg>
+                    </div>
+                    <div class="section-title">
+                        <h2>API Settings</h2>
+                        <p>Configure AI service API keys and endpoints</p>
+                    </div>
+                </div>
+                <div class="section-content">
+                    <div class="setting-item">
+                        <label for="openrouterKey">OpenRouter API Key</label>
+                        <div class="input-group">
+                            <div class="password-input">
+                                <input type="password" id="openrouterKey" name="openrouterKey"
+                                    value="{{ config.openrouter_api_key }}" placeholder="sk-or-v1-...">
+                                <button type="button" class="toggle-visibility"
+                                    onclick="togglePassword('openrouterKey')">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                        class="eye-icon">
+                                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                        <circle cx="12" cy="12" r="3"></circle>
+                                    </svg>
+                                </button>
+                            </div>
+                            <span class="input-hint">Get your key from <a href="https://openrouter.ai/keys"
+                                    target="_blank">openrouter.ai/keys</a></span>
+                        </div>
+                    </div>
+                    <div class="setting-item">
+                        <label for="openrouterEndpoint">OpenRouter Endpoint</label>
+                        <div class="input-group">
+                            <input type="url" id="openrouterEndpoint" name="openrouterEndpoint"
+                                value="{{ config.openrouter_endpoint }}">
+                            <span class="input-hint">API endpoint URL for OpenRouter</span>
+                        </div>
+                    </div>
+                    <div class="setting-item">
+                        <label for="groqKey">Groq API Key (Transcription)</label>
+                        <div class="input-group">
+                            <div class="password-input">
+                                <input type="password" id="groqKey" name="groqKey" value="{{ config.groq_api_key }}"
+                                    placeholder="gsk_...">
+                                <button type="button" class="toggle-visibility" onclick="togglePassword('groqKey')">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                        class="eye-icon">
+                                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                        <circle cx="12" cy="12" r="3"></circle>
+                                    </svg>
+                                </button>
+                            </div>
+                            <span class="input-hint">Optional: For audio transcription. Get from <a
+                                    href="https://console.groq.com/keys" target="_blank">console.groq.com</a></span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Model Settings -->
+            <section class="settings-section">
+                <div class="section-header">
+                    <div class="section-icon model">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path
+                                d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83">
+                            </path>
+                        </svg>
+                    </div>
+                    <div class="section-title">
+                        <h2>Model Settings</h2>
+                        <p>Choose default AI models for processing</p>
+                    </div>
+                </div>
+                <div class="section-content">
+                    <div class="setting-item">
+                        <label for="defaultModel">Default AI Model (Free Models Only)</label>
+                        <div class="input-group">
+                            <div class="model-select-wrapper">
+                                <select id="defaultModel" name="defaultModel">
+                                    <option value="{{ config.default_model }}" selected>{{ config.default_model }}
+                                    </option>
+                                </select>
+                                <button type="button" class="refresh-models-btn" onclick="loadFreeModels()"
+                                    title="Refresh available models">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                        id="refreshIcon">
+                                        <polyline points="23 4 23 10 17 10"></polyline>
+                                        <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+                                    </svg>
+                                </button>
+                            </div>
+                            <span class="input-hint">
+                                <span id="modelCount">Loading...</span> free models available from OpenRouter.
+                                <a href="https://openrouter.ai/models?q=free" target="_blank">View all models</a>
+                            </span>
+                        </div>
+                    </div>
+                    <div class="setting-item">
+                        <label for="whisperModel">Whisper Model (Local Transcription)</label>
+                        <div class="input-group">
+                            <select id="whisperModel" name="whisperModel">
+                                <option value="tiny" {% if config.whisper_model=='tiny' %}selected{% endif %}>Tiny
+                                    (Fastest, least accurate)</option>
+                                <option value="base" {% if config.whisper_model=='base' %}selected{% endif %}>Base
+                                    (Default, balanced)</option>
+                                <option value="small" {% if config.whisper_model=='small' %}selected{% endif %}>Small
+                                    (Better accuracy)</option>
+                                <option value="medium" {% if config.whisper_model=='medium' %}selected{% endif %}>Medium
+                                    (High accuracy)</option>
+                                <option value="large" {% if config.whisper_model=='large' %}selected{% endif %}>Large
+                                    (Best accuracy, slowest)</option>
+                            </select>
+                            <span class="input-hint">Larger models are more accurate but slower</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+
+            <!-- Application Settings -->
+            <section class="settings-section">
+                <div class="section-header">
+                    <div class="section-icon app">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                            <line x1="3" y1="9" x2="21" y2="9"></line>
+                            <line x1="9" y1="21" x2="9" y2="9"></line>
+                        </svg>
+                    </div>
+                    <div class="section-title">
+                        <h2>Application Settings</h2>
+                        <p>General application preferences</p>
+                    </div>
+                </div>
+                <div class="section-content">
+                    <div class="setting-item">
+                        <label for="autoSaveInterval">Auto-save Interval (seconds)</label>
+                        <div class="input-group">
+                            <input type="number" id="autoSaveInterval" name="autoSaveInterval"
+                                value="{{ config.auto_save_interval }}" min="1" max="60">
+                            <span class="input-hint">How often to auto-save the draft (in seconds)</span>
+                        </div>
+                    </div>
+                    <div class="setting-item">
+                        <label for="theme">Theme</label>
+                        <div class="input-group">
+                            <select id="theme" name="theme">
+                                <option value="dark" {% if config.theme=='dark' %}selected{% endif %}>Dark (Default)
+                                </option>
+                                <option value="light" {% if config.theme=='light' %}selected{% endif %}>Light</option>
+                            </select>
+                            <span class="input-hint">Interface color theme</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- Toast Notification -->
+        <div class="toast" id="toast">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="toast-icon">
+                <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+            <span id="toastMessage">Settings saved successfully!</span>
+        </div>
+    </div>
+
+    <script>
+        // Store the current model value
+        const currentModel = '{{ config.default_model }}';
+
+        // Load free models from OpenRouter API
+        async function loadFreeModels() {
+            const select = document.getElementById('defaultModel');
+            const refreshBtn = document.querySelector('.refresh-models-btn');
+            const refreshIcon = document.getElementById('refreshIcon');
+            const modelCount = document.getElementById('modelCount');
+
+            // Add spinning animation to refresh button
+            if (refreshIcon) {
+                refreshIcon.style.animation = 'spin 1s linear infinite';
+            }
+            if (refreshBtn) {
+                refreshBtn.disabled = true;
+            }
+
+            try {
+                const response = await fetch('/api/models');
+                const data = await response.json();
+
+                if (data.success && data.models) {
+                    // Clear existing options
+                    select.innerHTML = '';
+
+                    // Add models as options
+                    data.models.forEach(model => {
+                        const option = document.createElement('option');
+                        option.value = model.id;
+                        option.textContent = `${model.name} (${formatContextLength(model.context_length)})`;
+                        if (model.id === currentModel) {
+                            option.selected = true;
+                        }
+                        select.appendChild(option);
+                    });
+
+                    // Update count
+                    modelCount.textContent = `${data.models.length}`;
+
+                    // If current model not in list, add it as first option
+                    if (currentModel && !data.models.find(m => m.id === currentModel)) {
+                        const option = document.createElement('option');
+                        option.value = currentModel;
+                        option.textContent = `${currentModel} (current)`;
+                        option.selected = true;
+                        select.insertBefore(option, select.firstChild);
+                    }
+                } else {
+                    modelCount.textContent = 'Error loading models';
+                    console.error('Error loading models:', data.error);
+                }
+            } catch (error) {
+                modelCount.textContent = 'Error loading models';
+                console.error('Error fetching models:', error);
+            }
+
+            // Remove spinning animation
+            if (refreshIcon) {
+                refreshIcon.style.animation = '';
+            }
+            if (refreshBtn) {
+                refreshBtn.disabled = false;
+            }
+        }
+
+        // Format context length for display
+        function formatContextLength(length) {
+            if (!length) return 'Unknown';
+            if (length >= 1000000) return `${(length / 1000000).toFixed(1)}M ctx`;
+            if (length >= 1000) return `${(length / 1000).toFixed(0)}K ctx`;
+            return `${length} ctx`;
+        }
+
+        // Toggle password visibility
+        function togglePassword(inputId) {
+            const input = document.getElementById(inputId);
+            input.type = input.type === 'password' ? 'text' : 'password';
+        }
+
+        // Save settings
+        async function saveSettings() {
+            const settings = {
+                upload_folder: document.getElementById('uploadFolder').value,
+                temp_folder: document.getElementById('tempFolder').value,
+                max_file_size: parseInt(document.getElementById('maxFileSize').value),
+                openrouter_api_key: document.getElementById('openrouterKey').value,
+                openrouter_endpoint: document.getElementById('openrouterEndpoint').value,
+                groq_api_key: document.getElementById('groqKey').value,
+                default_model: document.getElementById('defaultModel').value,
+                whisper_model: document.getElementById('whisperModel').value,
+                auto_save_interval: parseInt(document.getElementById('autoSaveInterval').value),
+                theme: document.getElementById('theme').value
+            };
+
+            const saveBtn = document.getElementById('saveBtn');
+            saveBtn.disabled = true;
+            saveBtn.innerHTML = '<span class="spinner-small"></span> Saving...';
+
+            try {
+                const response = await fetch('/settings/save', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(settings)
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    showToast('Settings saved successfully!', 'success');
+                } else {
+                    showToast('Error saving settings: ' + data.error, 'error');
+                }
+            } catch (error) {
+                showToast('Error saving settings', 'error');
+                console.error('Error:', error);
+            }
+
+            saveBtn.disabled = false;
+            saveBtn.innerHTML = `
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                    <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                    <polyline points="7 3 7 8 15 8"></polyline>
+                </svg>
+                Save Settings
+            `;
+        }
+
+        // Reset to defaults
+        async function resetSettings() {
+            if (!confirm('Reset all settings to defaults? This cannot be undone.')) return;
+
+            try {
+                const response = await fetch('/settings/reset', { method: 'POST' });
+                const data = await response.json();
+                if (data.success) {
+                    showToast('Settings reset to defaults!', 'success');
+                    setTimeout(() => location.reload(), 1000);
+                } else {
+                    showToast('Error resetting settings', 'error');
+                }
+            } catch (error) {
+                showToast('Error resetting settings', 'error');
+                console.error('Error:', error);
+            }
+        }
+
+        // Show toast notification
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            const toastMessage = document.getElementById('toastMessage');
+
+            toast.className = 'toast ' + type;
+            toastMessage.textContent = message;
+            toast.classList.add('show');
+
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+
+        // Track changes
+        document.querySelectorAll('input, select').forEach(input => {
+            input.addEventListener('change', () => {
+                document.getElementById('saveBtn').classList.add('has-changes');
+            });
+        });
+
+        // Load free models on page load
+        document.addEventListener('DOMContentLoaded', function () {
+            loadFreeModels();
+        });
+    </script>
+</body>
+
+</html>

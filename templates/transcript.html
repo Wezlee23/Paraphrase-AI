@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Video Transcript | Paraphrase AI</title>
+    <meta name="description"
+        content="Extract transcripts from YouTube and Vimeo videos with our powerful AI-driven transcription tool.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/transcript.css') }}">
+</head>
+
+<body>
+    <!-- Navigation -->
+    <nav class="nav">
+        <a href="/" class="nav-logo">
+            <svg viewBox="0 0 24 24" fill="none" stroke="url(#grad1)" stroke-width="2" stroke-linecap="round"
+                stroke-linejoin="round">
+                <defs>
+                    <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" style="stop-color:#667eea" />
+                        <stop offset="100%" style="stop-color:#764ba2" />
+                    </linearGradient>
+                </defs>
+                <path d="M12 19l7-7 3 3-7 7-3-3z"></path>
+                <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"></path>
+                <path d="M2 2l7.586 7.586"></path>
+                <circle cx="11" cy="11" r="2"></circle>
+            </svg>
+            Paraphrase AI
+        </a>
+        <div class="nav-links">
+            <a href="/" class="nav-link">Paraphrase</a>
+            <a href="/summarize" class="nav-link">Summarize</a>
+            <a href="/notes" class="nav-link">Notes</a>
+            <a href="/grammar" class="nav-link">Grammar</a>
+            <a href="/citations" class="nav-link">Citations</a>
+            <a href="/transcript" class="nav-link active">Transcript</a>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container">
+        <header class="header">
+            <h1>Video <span>Transcription</span></h1>
+            <p>Extract text transcripts from YouTube and Vimeo videos instantly with AI-powered accuracy.</p>
+        </header>
+
+        <div class="card">
+            <form method="POST" action="/transcript">
+                <div class="form-group">
+                    <label for="video_url" class="form-label">Enter Video URL</label>
+                    <div class="input-wrapper">
+                        <span class="input-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+                                <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+                            </svg>
+                        </span>
+                        <input type="url" id="video_url" name="video_url"
+                            placeholder="https://www.youtube.com/watch?v=..." required>
+                    </div>
+                </div>
+                <button type="submit" class="submit-btn">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <polygon points="23 7 16 12 23 17 23 7"></polygon>
+                        <rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect>
+                    </svg>
+                    Get Transcript
+                </button>
+            </form>
+
+            <!-- Supported Platforms -->
+            <div class="platforms">
+                <div class="platform youtube">
+                    <svg viewBox="0 0 24 24" fill="currentColor">
+                        <path
+                            d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" />
+                    </svg>
+                    YouTube
+                </div>
+                <div class="platform vimeo">
+                    <svg viewBox="0 0 24 24" fill="currentColor">
+                        <path
+                            d="M23.977 6.416c-.105 2.338-1.739 5.543-4.894 9.609-3.268 4.247-6.026 6.375-8.274 6.375-1.394 0-2.575-1.287-3.541-3.864-.644-2.355-1.287-4.71-1.93-7.066-.715-2.576-1.484-3.864-2.308-3.864-.179 0-.805.378-1.877 1.132L0 7.403c1.18-1.036 2.345-2.072 3.494-3.106 1.576-1.361 2.759-2.077 3.541-2.146 1.86-.18 3.007 1.093 3.44 3.819.465 2.947.789 4.78.969 5.494.538 2.445 1.13 3.669 1.777 3.669.501 0 1.255-.793 2.261-2.376 1.005-1.587 1.543-2.797 1.612-3.627.143-1.373-.396-2.062-1.617-2.062-.575 0-1.168.131-1.777.391 1.18-3.868 3.434-5.748 6.762-5.637 2.469.073 3.628 1.675 3.515 4.594z" />
+                    </svg>
+                    Vimeo
+                </div>
+            </div>
+
+            {% if error %}
+            <div class="error">
+                <div class="error-header">
+                    <div class="error-title">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <line x1="15" y1="9" x2="9" y2="15"></line>
+                            <line x1="9" y1="9" x2="15" y2="15"></line>
+                        </svg>
+                        Error
+                    </div>
+                </div>
+                <p class="error-text">{{ error }}</p>
+            </div>
+            {% endif %}
+
+            {% if transcript %}
+            <div class="result">
+                <div class="result-header">
+                    <div class="result-title">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                            <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                        </svg>
+                        Transcript Ready
+                    </div>
+                    <button type="button" class="copy-btn" onclick="copyToClipboard()">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                        </svg>
+                        Copy
+                    </button>
+                </div>
+                <div class="result-text" id="resultText">{{ transcript }}</div>
+            </div>
+            {% elif not error %}
+            <div class="placeholder">
+                <div class="placeholder-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <polygon points="23 7 16 12 23 17 23 7"></polygon>
+                        <rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect>
+                    </svg>
+                </div>
+                <p class="placeholder-text">Enter a video URL above and click "Get Transcript" to see the output here.
+                </p>
+            </div>
+            {% endif %}
+        </div>
+
+        <footer class="footer">
+            Powered by advanced AI • <a href="/">← Back to Paraphraser</a>
+        </footer>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/common.js') }}"></script>
+</body>
+
+</html>

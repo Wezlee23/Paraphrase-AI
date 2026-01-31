@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Citation Generator | Paraphrase AI</title>
+    <meta name="description"
+        content="Generate properly formatted citations in APA, MLA, or Chicago style from your research text.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/citations.css') }}">
+</head>
+
+<body>
+    <!-- Navigation -->
+    <nav class="nav">
+        <a href="/" class="nav-logo">
+            <svg viewBox="0 0 24 24" fill="none" stroke="url(#grad1)" stroke-width="2" stroke-linecap="round"
+                stroke-linejoin="round">
+                <defs>
+                    <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" style="stop-color:#667eea" />
+                        <stop offset="100%" style="stop-color:#764ba2" />
+                    </linearGradient>
+                </defs>
+                <path d="M12 19l7-7 3 3-7 7-3-3z"></path>
+                <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"></path>
+                <path d="M2 2l7.586 7.586"></path>
+                <circle cx="11" cy="11" r="2"></circle>
+            </svg>
+            Paraphrase AI
+        </a>
+        <div class="nav-links">
+            <a href="/" class="nav-link">Paraphrase</a>
+            <a href="/summarize" class="nav-link">Summarize</a>
+            <a href="/notes" class="nav-link">Notes</a>
+            <a href="/grammar" class="nav-link">Grammar</a>
+            <a href="/citations" class="nav-link active">Citations</a>
+            <a href="/transcript" class="nav-link">Transcript</a>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container">
+        <header class="header">
+            <h1>Citation <span>Generator</span></h1>
+            <p>Extract sources from your text and format them in APA, MLA, or Chicago style.</p>
+        </header>
+
+        <div class="card">
+            <form method="post" id="citationsForm">
+                <div class="form-group">
+                    <div class="form-label-row">
+                        <label for="user_text" class="form-label">Paste your research text</label>
+                        <span class="char-count"><span id="charCount">0</span> characters</span>
+                    </div>
+                    <div class="textarea-wrapper">
+                        <textarea name="user_text" id="user_text"
+                            placeholder="Paste text containing source information (author names, book titles, publication dates, URLs, etc.)..."
+                            required>{{ request.form.user_text or '' }}</textarea>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="citation_style" class="form-label">Citation Style</label>
+                    <div class="select-wrapper">
+                        <select name="citation_style" id="citation_style" class="style-select">
+                            <option value="APA" {% if request.form.citation_style=='APA' or not
+                                request.form.citation_style %}selected{% endif %}>APA (7th Edition)</option>
+                            <option value="MLA" {% if request.form.citation_style=='MLA' %}selected{% endif %}>MLA (9th
+                                Edition)</option>
+                            <option value="Chicago" {% if request.form.citation_style=='Chicago' %}selected{% endif %}>
+                                Chicago (17th Edition)</option>
+                        </select>
+                        <svg class="select-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <polyline points="6 9 12 15 18 9"></polyline>
+                        </svg>
+                    </div>
+                </div>
+
+                <button type="submit" class="submit-btn">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+                        <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+                    </svg>
+                    Generate Citations
+                </button>
+            </form>
+
+            {% if generated %}
+            <div class="result">
+                <div class="result-header">
+                    <div class="result-title">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                            <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                        </svg>
+                        Formatted Citations
+                    </div>
+                    <button type="button" class="copy-btn" onclick="copyToClipboard()">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                        </svg>
+                        Copy
+                    </button>
+                </div>
+                <div class="result-text formatted-citations" id="resultText">{{ generated }}</div>
+            </div>
+            {% endif %}
+        </div>
+
+        <footer class="footer">
+            Powered by advanced AI • <a href="/">← Back to Paraphraser</a>
+        </footer>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/common.js') }}"></script>
+</body>
+
+</html>

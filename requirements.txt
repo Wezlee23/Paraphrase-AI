@@ -1,0 +1,9 @@
+Flask
+python-dotenv
+requests
+youtube-transcript-api
+yt-dlp
+openai-whisper
+PyPDF2
+python-docx
+werkzeug

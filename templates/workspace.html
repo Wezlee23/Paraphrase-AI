@@ -1,0 +1,787 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Learning Workspace | Paraphrase AI</title>
+    <meta name="description" content="Your integrated learning workspace for notes, research, and writing.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/workspace.css') }}">
+</head>
+
+<body>
+    <div class="app">
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <!-- Collapse Toggle -->
+            <button class="collapse-toggle" id="sidebarToggle" title="Toggle Sidebar">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="15 18 9 12 15 6"></polyline>
+                </svg>
+            </button>
+            <!-- Resize Handle -->
+            <div class="resize-handle resize-handle-right" id="sidebarResizeHandle"></div>
+
+            <div class="sidebar-header">
+                <a href="/" class="logo">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="url(#grad1)" stroke-width="2">
+                        <defs>
+                            <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" style="stop-color:#667eea" />
+                                <stop offset="100%" style="stop-color:#764ba2" />
+                            </linearGradient>
+                        </defs>
+                        <path d="M12 19l7-7 3 3-7 7-3-3z"></path>
+                        <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"></path>
+                        <circle cx="11" cy="11" r="2"></circle>
+                    </svg>
+                    <span>Workspace</span>
+                </a>
+            </div>
+
+            <!-- YouTube Transcription -->
+            <div class="sidebar-section">
+                <h3 class="section-title">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polygon points="23 7 16 12 23 17 23 7"></polygon>
+                        <rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect>
+                    </svg>
+                    YouTube
+                </h3>
+                <div class="url-input-group">
+                    <input type="url" id="youtubeUrl" placeholder="Paste YouTube URL...">
+                    <button class="btn-transcribe" onclick="transcribeYouTube()" title="Get Transcript">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                        </svg>
+                    </button>
+                </div>
+                <label class="checkbox-option"
+                    title="Use Whisper to transcribe audio (slower but works for videos without captions)">
+                    <input type="checkbox" id="forceWhisper">
+                    <span>Use Whisper (for no captions)</span>
+                </label>
+            </div>
+
+            <!-- File Upload Section -->
+            <div class="sidebar-section">
+                <h3 class="section-title">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="17 8 12 3 7 8"></polyline>
+                        <line x1="12" y1="3" x2="12" y2="15"></line>
+                    </svg>
+                    Files
+                </h3>
+                <div class="upload-area" id="uploadArea">
+                    <input type="file" id="fileInput" multiple
+                        accept=".txt,.pdf,.docx,.doc,.mp3,.mp4,.wav,.webm,.m4a,.ogg" hidden>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="17 8 12 3 7 8"></polyline>
+                        <line x1="12" y1="3" x2="12" y2="15"></line>
+                    </svg>
+                    <span>Drop files or click</span>
+                    <small>PDF, DOCX, TXT, Audio, Video</small>
+                </div>
+                <div class="file-list" id="fileList">
+                    {% for file in files %}
+                    <div class="file-item" data-id="{{ file.id }}" data-type="{{ file.type }}">
+                        <div class="file-icon {{ file.type }}">
+                            {% if file.type == 'pdf' %}📄{% elif file.type == 'document' %}📝{% elif file.type ==
+                            'audio' %}🎵{% elif file.type == 'video' %}🎬{% else %}📃{% endif %}
+                        </div>
+                        <div class="file-info">
+                            <span class="file-name">{{ file.original_name }}</span>
+                            <span class="file-meta">{{ file.type }}</span>
+                        </div>
+                        {% if file.type in ['audio', 'video'] %}
+                        <button class="file-action transcribe-file" title="Transcribe"
+                            onclick="transcribeFile('{{ file.id }}')">🎤</button>
+                        {% endif %}
+                        <button class="file-action use-file" title="Use in editor"
+                            onclick="useFile('{{ file.id }}')">↗</button>
+                        <button class="file-action delete-file" title="Delete"
+                            onclick="deleteFile('{{ file.id }}')">×</button>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="sidebar-section sidebar-footer">
+                <button class="btn-clear" onclick="clearWorkspace()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="3 6 5 6 21 6"></polyline>
+                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                    </svg>
+                    Clear Workspace
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main">
+            <!-- Tool Tabs -->
+            <div class="tool-tabs">
+                <button class="tool-tab active" data-tool="paraphrase">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 19l7-7 3 3-7 7-3-3z"></path>
+                        <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"></path>
+                    </svg>
+                    Humanize
+                </button>
+                <button class="tool-tab" data-tool="summarize">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="21" y1="10" x2="3" y2="10"></line>
+                        <line x1="21" y1="6" x2="3" y2="6"></line>
+                        <line x1="21" y1="14" x2="3" y2="14"></line>
+                        <line x1="21" y1="18" x2="3" y2="18"></line>
+                    </svg>
+                    Summarize
+                </button>
+                <button class="tool-tab" data-tool="notes">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                        <polyline points="14 2 14 8 20 8"></polyline>
+                        <line x1="16" y1="13" x2="8" y2="13"></line>
+                        <line x1="16" y1="17" x2="8" y2="17"></line>
+                    </svg>
+                    Notes
+                </button>
+                <button class="tool-tab" data-tool="grammar">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                    </svg>
+                    Grammar
+                </button>
+                <button class="tool-tab" data-tool="citations">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+                        <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+                    </svg>
+                    Citations
+                </button>
+                <a href="/settings" class="settings-link" title="Settings">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="3"></circle>
+                        <path
+                            d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z">
+                        </path>
+                    </svg>
+                </a>
+            </div>
+
+            <!-- Tool Content -->
+            <div class="tool-content">
+                <div class="input-section">
+                    <div class="input-header">
+                        <label>Input Text</label>
+                        <span class="char-count"><span id="charCount">0</span> chars</span>
+                    </div>
+                    <textarea id="inputText"
+                        placeholder="Paste or type your text here, or use content from uploaded files..."></textarea>
+
+                    <!-- Citation style (hidden by default) -->
+                    <div class="citation-options" id="citationOptions" style="display: none;">
+                        <label>Citation Style:</label>
+                        <select id="citationStyle">
+                            <option value="APA">APA (7th Edition)</option>
+                            <option value="MLA">MLA (9th Edition)</option>
+                            <option value="Chicago">Chicago (17th Edition)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="action-buttons">
+                    <button class="btn-primary" id="processBtn" onclick="processText()">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                        </svg>
+                        <span id="processLabel">Humanize</span>
+                    </button>
+                    <button class="btn-secondary" onclick="processAndAppend()">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="12" y1="5" x2="12" y2="19"></line>
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                        </svg>
+                        Add to Draft
+                    </button>
+                </div>
+
+                <div class="output-section">
+                    <div class="output-header">
+                        <label>Result</label>
+                        <button class="btn-icon" onclick="copyResult()" title="Copy">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                            </svg>
+                        </button>
+                    </div>
+                    <div class="output-text" id="outputText">
+                        <span class="placeholder">Results will appear here...</span>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Draft Panel -->
+        <aside class="draft-panel" id="draftPanel">
+            <!-- Collapse Toggle -->
+            <button class="draft-collapse-toggle" id="draftToggle" title="Toggle Draft Panel">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="9 18 15 12 9 6"></polyline>
+                </svg>
+            </button>
+            <!-- Resize Handle -->
+            <div class="resize-handle resize-handle-left" id="draftResizeHandle"></div>
+
+            <div class="draft-header">
+                <h3>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                    </svg>
+                    <span>Draft</span>
+                </h3>
+                <div class="draft-actions">
+                    <button class="btn-icon" onclick="improveDraft()" title="Improve with AI">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path
+                                d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83">
+                            </path>
+                        </svg>
+                    </button>
+                    <button class="btn-icon" onclick="exportDraft()" title="Export Draft">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                            <polyline points="7 10 12 15 17 10"></polyline>
+                            <line x1="12" y1="15" x2="12" y2="3"></line>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+            <textarea id="draftText"
+                placeholder="Your draft will build up here as you use the tools. Edit freely, then export when done.">{{ draft }}</textarea>
+            <div class="draft-footer">
+                <span class="draft-status" id="draftStatus">Auto-saved</span>
+            </div>
+        </aside>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="spinner"></div>
+        <span id="loadingText">Processing...</span>
+    </div>
+
+    <!-- Toast Container -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <script>
+        // ============================================
+        // TOAST NOTIFICATION SYSTEM
+        // ============================================
+        const toastIcons = {
+            success: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>',
+            error: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>',
+            warning: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>',
+            info: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>'
+        };
+
+        function showToast(message, type = 'info', title = null, duration = 5000) {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+
+            const defaultTitles = {
+                success: 'Success',
+                error: 'Error',
+                warning: 'Warning',
+                info: 'Info'
+            };
+
+            toast.innerHTML = `
+                <div class="toast-icon">${toastIcons[type]}</div>
+                <div class="toast-content">
+                    <div class="toast-title">${title || defaultTitles[type]}</div>
+                    <div class="toast-message">${message}</div>
+                </div>
+                <button class="toast-close" onclick="dismissToast(this.parentElement)">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            `;
+
+            container.appendChild(toast);
+
+            // Auto dismiss
+            if (duration > 0) {
+                setTimeout(() => dismissToast(toast), duration);
+            }
+
+            return toast;
+        }
+
+        function dismissToast(toast) {
+            if (!toast || toast.classList.contains('removing')) return;
+            toast.classList.add('removing');
+            setTimeout(() => toast.remove(), 300);
+        }
+
+        // Centralized API error handler
+        async function handleApiResponse(response) {
+            const data = await response.json();
+            if (!response.ok || data.error) {
+                throw new Error(data.error || `Request failed (${response.status})`);
+            }
+            return data;
+        }
+
+        // ============================================
+        // STATE & INITIALIZATION
+        // ============================================
+        let currentTool = 'paraphrase';
+        const toolLabels = {
+            'paraphrase': 'Humanize',
+            'summarize': 'Summarize',
+            'notes': 'Organize Notes',
+            'grammar': 'Improve Grammar',
+            'citations': 'Generate Citations'
+        };
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            initUpload();
+            initTabs();
+            initTextarea();
+            initDraft();
+            initPanelToggles();
+            initPanelResize();
+        });
+
+        // YouTube Transcription
+        async function transcribeYouTube() {
+            const url = document.getElementById('youtubeUrl').value.trim();
+            if (!url) {
+                showToast('Please enter a YouTube URL', 'warning');
+                return;
+            }
+
+            const forceDownload = document.getElementById('forceWhisper').checked;
+            const loadingMsg = forceDownload
+                ? 'Downloading and transcribing with Whisper (this may take a while)...'
+                : 'Getting YouTube transcript...';
+
+            showLoading(loadingMsg);
+            try {
+                const response = await fetch('/transcribe-url', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ url, force_download: forceDownload })
+                });
+                const data = await handleApiResponse(response);
+
+                document.getElementById('inputText').value = data.transcript;
+                updateCharCount();
+                document.getElementById('youtubeUrl').value = '';
+                const method = data.method === 'whisper' ? 'Whisper transcription' : 'YouTube captions';
+                showToast(`Transcript loaded using ${method}! You can now process it further.`, 'success', 'Transcript Ready');
+            } catch (error) {
+                console.error('Error:', error);
+                showToast(error.message || 'Failed to get transcript', 'error');
+            }
+            hideLoading();
+        }
+
+        // Transcribe uploaded audio/video file
+        async function transcribeFile(fileId) {
+            showLoading('Transcribing audio... (this may take a while)');
+            try {
+                const response = await fetch(`/transcribe-file/${fileId}`, { method: 'POST' });
+                const data = await handleApiResponse(response);
+
+                document.getElementById('inputText').value = data.transcript;
+                updateCharCount();
+                showToast('Transcription complete!', 'success');
+            } catch (error) {
+                console.error('Error:', error);
+                showToast(error.message || 'Transcription failed', 'error');
+            }
+            hideLoading();
+        }
+
+        // File Upload
+        function initUpload() {
+            const uploadArea = document.getElementById('uploadArea');
+            const fileInput = document.getElementById('fileInput');
+
+            uploadArea.addEventListener('click', () => fileInput.click());
+
+            uploadArea.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                uploadArea.classList.add('dragover');
+            });
+
+            uploadArea.addEventListener('dragleave', () => {
+                uploadArea.classList.remove('dragover');
+            });
+
+            uploadArea.addEventListener('drop', (e) => {
+                e.preventDefault();
+                uploadArea.classList.remove('dragover');
+                handleFiles(e.dataTransfer.files);
+            });
+
+            fileInput.addEventListener('change', (e) => {
+                handleFiles(e.target.files);
+            });
+        }
+
+        async function handleFiles(files) {
+            const formData = new FormData();
+            for (let file of files) {
+                formData.append('files', file);
+            }
+
+            showLoading('Uploading files...');
+            try {
+                const response = await fetch('/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await response.json();
+                if (data.success) {
+                    data.files.forEach(addFileToList);
+                }
+            } catch (error) {
+                console.error('Upload error:', error);
+            }
+            hideLoading();
+        }
+
+        function addFileToList(file) {
+            const fileList = document.getElementById('fileList');
+            const icons = { pdf: '📄', document: '📝', audio: '🎵', video: '🎬', text: '📃' };
+            const isAudioVideo = ['audio', 'video'].includes(file.type);
+
+            const div = document.createElement('div');
+            div.className = 'file-item';
+            div.dataset.id = file.id;
+            div.dataset.type = file.type;
+            div.innerHTML = `
+                <div class="file-icon ${file.type}">${icons[file.type] || '📃'}</div>
+                <div class="file-info">
+                    <span class="file-name">${file.original_name}</span>
+                    <span class="file-meta">${file.type}</span>
+                </div>
+                ${isAudioVideo ? `<button class="file-action transcribe-file" title="Transcribe" onclick="transcribeFile('${file.id}')">🎤</button>` : ''}
+                <button class="file-action use-file" title="Use in editor" onclick="useFile('${file.id}')">↗</button>
+                <button class="file-action delete-file" title="Delete" onclick="deleteFile('${file.id}')">×</button>
+            `;
+            fileList.appendChild(div);
+        }
+
+        async function useFile(fileId) {
+            showLoading('Loading file...');
+            try {
+                const response = await fetch(`/get-file-content/${fileId}`);
+                const data = await response.json();
+                if (data.success && data.content) {
+                    document.getElementById('inputText').value = data.content;
+                    updateCharCount();
+                } else if (data.content && data.content.startsWith('[')) {
+                    alert(data.content);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+            }
+            hideLoading();
+        }
+
+        async function deleteFile(fileId) {
+            if (!confirm('Delete this file?')) return;
+
+            try {
+                await fetch(`/delete-file/${fileId}`, { method: 'POST' });
+                document.querySelector(`.file-item[data-id="${fileId}"]`)?.remove();
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }
+
+        // Tool Tabs
+        function initTabs() {
+            document.querySelectorAll('.tool-tab').forEach(tab => {
+                tab.addEventListener('click', () => {
+                    document.querySelectorAll('.tool-tab').forEach(t => t.classList.remove('active'));
+                    tab.classList.add('active');
+                    currentTool = tab.dataset.tool;
+                    document.getElementById('processLabel').textContent = toolLabels[currentTool];
+                    document.getElementById('citationOptions').style.display =
+                        currentTool === 'citations' ? 'flex' : 'none';
+                });
+            });
+        }
+
+        // Textarea
+        function initTextarea() {
+            const textarea = document.getElementById('inputText');
+            textarea.addEventListener('input', updateCharCount);
+            updateCharCount();
+        }
+
+        function updateCharCount() {
+            const count = document.getElementById('inputText').value.length;
+            document.getElementById('charCount').textContent = count;
+        }
+
+        // Draft
+        function initDraft() {
+            const draftText = document.getElementById('draftText');
+            let saveTimeout;
+
+            draftText.addEventListener('input', () => {
+                clearTimeout(saveTimeout);
+                document.getElementById('draftStatus').textContent = 'Saving...';
+                saveTimeout = setTimeout(saveDraft, 1000);
+            });
+        }
+
+        async function saveDraft() {
+            const draft = document.getElementById('draftText').value;
+            try {
+                await fetch('/update-draft', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ draft })
+                });
+                document.getElementById('draftStatus').textContent = 'Auto-saved';
+            } catch (error) {
+                document.getElementById('draftStatus').textContent = 'Save failed';
+            }
+        }
+
+        // Processing
+        async function processText(appendToDraft = false) {
+            const text = document.getElementById('inputText').value.trim();
+            if (!text) {
+                showToast('Please enter some text first', 'warning');
+                return;
+            }
+
+            showLoading('Processing with AI...');
+            try {
+                const response = await fetch('/process', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        tool: currentTool,
+                        text: text,
+                        append_to_draft: appendToDraft,
+                        citation_style: document.getElementById('citationStyle').value
+                    })
+                });
+                const data = await handleApiResponse(response);
+
+                document.getElementById('outputText').innerHTML =
+                    `<div class="output-content">${escapeHtml(data.result)}</div>`;
+
+                if (appendToDraft) {
+                    document.getElementById('draftText').value = data.draft;
+                    showToast('Added to draft', 'success');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showToast(error.message || 'Processing failed. Please try again.', 'error');
+                document.getElementById('outputText').innerHTML =
+                    '<div class="error">An error occurred. Please try again.</div>';
+            }
+            hideLoading();
+        }
+
+        function processAndAppend() {
+            processText(true);
+        }
+
+        async function improveDraft() {
+            const draft = document.getElementById('draftText').value.trim();
+            if (!draft) {
+                showToast('Draft is empty', 'warning');
+                return;
+            }
+
+            document.getElementById('inputText').value = draft;
+            updateCharCount();
+
+            // Switch to grammar tool and process
+            document.querySelector('[data-tool="grammar"]').click();
+            await processText(false);
+
+            // Update draft with result
+            const result = document.getElementById('outputText').textContent;
+            if (result && !result.includes('error')) {
+                document.getElementById('draftText').value = result;
+                saveDraft();
+                showToast('Draft improved!', 'success');
+            }
+        }
+
+        function exportDraft() {
+            window.location.href = '/export-draft';
+        }
+
+        function copyResult() {
+            const text = document.getElementById('outputText').textContent;
+            navigator.clipboard.writeText(text).then(() => {
+                showToast('Copied to clipboard!', 'success');
+            }).catch(() => {
+                showToast('Failed to copy to clipboard', 'error');
+            });
+        }
+
+        async function clearWorkspace() {
+            if (!confirm('Clear all files and drafts?')) return;
+
+            showLoading('Clearing workspace...');
+            try {
+                await fetch('/clear-workspace', { method: 'POST' });
+                location.reload();
+            } catch (error) {
+                console.error('Error:', error);
+            }
+            hideLoading();
+        }
+
+        // Helpers
+        function showLoading(message = 'Processing...') {
+            document.getElementById('loadingText').textContent = message;
+            document.getElementById('loadingOverlay').classList.add('active');
+        }
+
+        function hideLoading() {
+            document.getElementById('loadingOverlay').classList.remove('active');
+        }
+
+        function escapeHtml(text) {
+            return text.replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/\n/g, '<br>');
+        }
+
+        // Panel Toggle Functions
+        function initPanelToggles() {
+            // Sidebar toggle
+            const sidebarToggle = document.getElementById('sidebarToggle');
+            const sidebar = document.getElementById('sidebar');
+
+            sidebarToggle.addEventListener('click', () => {
+                sidebar.classList.toggle('collapsed');
+                // Save state to localStorage
+                localStorage.setItem('sidebarCollapsed', sidebar.classList.contains('collapsed'));
+            });
+
+            // Restore sidebar state
+            if (localStorage.getItem('sidebarCollapsed') === 'true') {
+                sidebar.classList.add('collapsed');
+            }
+
+            // Draft panel toggle
+            const draftToggle = document.getElementById('draftToggle');
+            const draftPanel = document.getElementById('draftPanel');
+
+            draftToggle.addEventListener('click', () => {
+                draftPanel.classList.toggle('collapsed');
+                // Save state to localStorage
+                localStorage.setItem('draftCollapsed', draftPanel.classList.contains('collapsed'));
+            });
+
+            // Restore draft panel state
+            if (localStorage.getItem('draftCollapsed') === 'true') {
+                draftPanel.classList.add('collapsed');
+            }
+        }
+
+        // Panel Resize Functions
+        function initPanelResize() {
+            // Sidebar resize
+            const sidebarResizeHandle = document.getElementById('sidebarResizeHandle');
+            const sidebar = document.getElementById('sidebar');
+
+            let isResizingSidebar = false;
+
+            sidebarResizeHandle.addEventListener('mousedown', (e) => {
+                if (sidebar.classList.contains('collapsed')) return;
+                isResizingSidebar = true;
+                document.body.classList.add('resizing');
+                sidebarResizeHandle.classList.add('active');
+                e.preventDefault();
+            });
+
+            // Draft panel resize
+            const draftResizeHandle = document.getElementById('draftResizeHandle');
+            const draftPanel = document.getElementById('draftPanel');
+
+            let isResizingDraft = false;
+
+            draftResizeHandle.addEventListener('mousedown', (e) => {
+                if (draftPanel.classList.contains('collapsed')) return;
+                isResizingDraft = true;
+                document.body.classList.add('resizing');
+                draftResizeHandle.classList.add('active');
+                e.preventDefault();
+            });
+
+            // Mouse move handler
+            document.addEventListener('mousemove', (e) => {
+                if (isResizingSidebar) {
+                    const newWidth = Math.max(200, Math.min(500, e.clientX));
+                    sidebar.style.width = newWidth + 'px';
+                    localStorage.setItem('sidebarWidth', newWidth);
+                }
+
+                if (isResizingDraft) {
+                    const newWidth = Math.max(200, Math.min(600, window.innerWidth - e.clientX));
+                    draftPanel.style.width = newWidth + 'px';
+                    localStorage.setItem('draftWidth', newWidth);
+                }
+            });
+
+            // Mouse up handler
+            document.addEventListener('mouseup', () => {
+                if (isResizingSidebar) {
+                    isResizingSidebar = false;
+                    document.body.classList.remove('resizing');
+                    sidebarResizeHandle.classList.remove('active');
+                }
+
+                if (isResizingDraft) {
+                    isResizingDraft = false;
+                    document.body.classList.remove('resizing');
+                    draftResizeHandle.classList.remove('active');
+                }
+            });
+
+            // Restore saved widths
+            const savedSidebarWidth = localStorage.getItem('sidebarWidth');
+            if (savedSidebarWidth && !sidebar.classList.contains('collapsed')) {
+                sidebar.style.width = savedSidebarWidth + 'px';
+            }
+
+            const savedDraftWidth = localStorage.getItem('draftWidth');
+            if (savedDraftWidth && !draftPanel.classList.contains('collapsed')) {
+                draftPanel.style.width = savedDraftWidth + 'px';
+            }
+        }
+    </script>
+</body>
+
+</html>
