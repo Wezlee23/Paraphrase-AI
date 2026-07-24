@@ -110,50 +110,72 @@
                 </div>
                 <div class="section-content">
                     <div class="setting-item">
-                        <label for="openrouterKey">OpenRouter API Key</label>
+                        <label for="aiProvider">Active AI Provider</label>
                         <div class="input-group">
-                            <div class="password-input">
-                                <input type="password" id="openrouterKey" name="openrouterKey"
-                                    value="{{ config.openrouter_api_key }}" placeholder="sk-or-v1-...">
-                                <button type="button" class="toggle-visibility"
-                                    onclick="togglePassword('openrouterKey')">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                                        class="eye-icon">
-                                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                                        <circle cx="12" cy="12" r="3"></circle>
-                                    </svg>
-                                </button>
+                            <select id="aiProvider" name="aiProvider" onchange="toggleProviderSettings()">
+                                <option value="openrouter" {% if config.ai_provider=='openrouter' %}selected{% endif %}>
+                                    OpenRouter</option>
+                                <option value="local" {% if config.ai_provider=='local' %}selected{% endif %}>Local AI
+                                    (Ollama, LM Studio, etc.)</option>
+                            </select>
+                            <span class="input-hint">Choose which AI provider to use for text processing</span>
+                        </div>
+                    </div>
+
+                    <div id="openrouterSettings"
+                        style="{% if config.ai_provider == 'local' %}display: none;{% endif %}">
+                        <div class="setting-item">
+                            <label for="openrouterKey">OpenRouter API Key</label>
+                            <div class="input-group">
+                                <div class="password-input">
+                                    <input type="password" id="openrouterKey" name="openrouterKey"
+                                        value="{{ config.openrouter_api_key }}" placeholder="sk-or-v1-...">
+                                    <button type="button" class="toggle-visibility"
+                                        onclick="togglePassword('openrouterKey')">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                            class="eye-icon">
+                                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                            <circle cx="12" cy="12" r="3"></circle>
+                                        </svg>
+                                    </button>
+                                </div>
+                                <span class="input-hint">Get your key from <a href="https://openrouter.ai/keys"
+                                        target="_blank">openrouter.ai/keys</a></span>
                             </div>
-                            <span class="input-hint">Get your key from <a href="https://openrouter.ai/keys"
-                                    target="_blank">openrouter.ai/keys</a></span>
                         </div>
-                    </div>
-                    <div class="setting-item">
-                        <label for="openrouterEndpoint">OpenRouter Endpoint</label>
-                        <div class="input-group">
-                            <input type="url" id="openrouterEndpoint" name="openrouterEndpoint"
-                                value="{{ config.openrouter_endpoint }}">
-                            <span class="input-hint">API endpoint URL for OpenRouter</span>
-                        </div>
-                    </div>
-                    <div class="setting-item">
-                        <label for="groqKey">Groq API Key (Transcription)</label>
-                        <div class="input-group">
-                            <div class="password-input">
-                                <input type="password" id="groqKey" name="groqKey" value="{{ config.groq_api_key }}"
-                                    placeholder="gsk_...">
-                                <button type="button" class="toggle-visibility" onclick="togglePassword('groqKey')">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                                        class="eye-icon">
-                                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                                        <circle cx="12" cy="12" r="3"></circle>
-                                    </svg>
-                                </button>
+                        <div class="setting-item">
+                            <label for="openrouterEndpoint">OpenRouter Endpoint</label>
+                            <div class="input-group">
+                                <input type="url" id="openrouterEndpoint" name="openrouterEndpoint"
+                                    value="{{ config.openrouter_endpoint }}">
+                                <span class="input-hint">API endpoint URL for OpenRouter</span>
                             </div>
-                            <span class="input-hint">Optional: For audio transcription. Get from <a
-                                    href="https://console.groq.com/keys" target="_blank">console.groq.com</a></span>
                         </div>
                     </div>
+
+                    <div id="localAISettings"
+                        style="{% if config.ai_provider != 'local' %}display: none;{% endif %} margin-top: 20px;">
+                        <h4 style="margin-bottom: 10px; color: var(--text-primary);">Local AI Configuration</h4>
+                        <div class="setting-item">
+                            <label for="localEndpoint">Local API Endpoint</label>
+                            <div class="input-group">
+                                <input type="url" id="localEndpoint" name="localEndpoint"
+                                    value="{{ config.local_endpoint }}"
+                                    placeholder="http://localhost:11434/v1/chat/completions">
+                                <span class="input-hint">Your local AI server endpoint (e.g. Ollama or LM Studio)</span>
+                            </div>
+                        </div>
+                        <div class="setting-item">
+                            <label for="localModel">Local Model Name</label>
+                            <div class="input-group">
+                                <input type="text" id="localModel" name="localModel" value="{{ config.local_model }}"
+                                    placeholder="e.g. llama3">
+                                <span class="input-hint">Name of the model running locally</span>
+                            </div>
+                        </div>
+                    </div>
+
+
                 </div>
             </section>
 
@@ -174,13 +196,15 @@
                 </div>
                 <div class="section-content">
                     <div class="setting-item">
-                        <label for="defaultModel">Default AI Model (Free Models Only)</label>
+                        <label for="defaultModel">Default OpenRouter Model</label>
                         <div class="input-group">
                             <div class="model-select-wrapper">
-                                <select id="defaultModel" name="defaultModel">
+                                <select id="modelSelect" name="defaultModel"
+                                    onchange="document.getElementById('defaultModelHidden').value = this.value">
                                     <option value="{{ config.default_model }}" selected>{{ config.default_model }}
                                     </option>
                                 </select>
+                                <input type="hidden" id="defaultModelHidden" value="{{ config.default_model }}">
                                 <button type="button" class="refresh-models-btn" onclick="loadFreeModels()"
                                     title="Refresh available models">
                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
@@ -196,24 +220,7 @@
                             </span>
                         </div>
                     </div>
-                    <div class="setting-item">
-                        <label for="whisperModel">Whisper Model (Local Transcription)</label>
-                        <div class="input-group">
-                            <select id="whisperModel" name="whisperModel">
-                                <option value="tiny" {% if config.whisper_model=='tiny' %}selected{% endif %}>Tiny
-                                    (Fastest, least accurate)</option>
-                                <option value="base" {% if config.whisper_model=='base' %}selected{% endif %}>Base
-                                    (Default, balanced)</option>
-                                <option value="small" {% if config.whisper_model=='small' %}selected{% endif %}>Small
-                                    (Better accuracy)</option>
-                                <option value="medium" {% if config.whisper_model=='medium' %}selected{% endif %}>Medium
-                                    (High accuracy)</option>
-                                <option value="large" {% if config.whisper_model=='large' %}selected{% endif %}>Large
-                                    (Best accuracy, slowest)</option>
-                            </select>
-                            <span class="input-hint">Larger models are more accurate but slower</span>
-                        </div>
-                    </div>
+
                 </div>
             </section>
 
@@ -255,6 +262,73 @@
                     </div>
                 </div>
             </section>
+
+            <!-- Prompts Settings -->
+            <section class="settings-section">
+                <div class="section-header">
+                    <div class="section-icon prompts">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path
+                                d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z">
+                            </path>
+                        </svg>
+                    </div>
+                    <div class="section-title">
+                        <h2>Prompts Settings</h2>
+                        <p>Customize the instructions sent to the AI. Use {text} where the input text should be placed.
+                        </p>
+                    </div>
+                </div>
+                <div class="section-content">
+                    <h3 style="margin-top: 0;">Humanize</h3>
+                    <div class="setting-item">
+                        <label for="prompt_humanize_sys">System Prompt</label>
+                        <div class="input-group">
+                            <textarea id="prompt_humanize_sys" name="prompt_humanize_sys" rows="3"
+                                style="width:100%; border:1px solid #334155; border-radius:4px; padding:8px; background:var(--bg-input); color:var(--text-primary); font-family:inherit;">{{ config.prompt_humanize_sys }}</textarea>
+                        </div>
+                    </div>
+                    <div class="setting-item">
+                        <label for="prompt_humanize_user">User Prompt</label>
+                        <div class="input-group">
+                            <textarea id="prompt_humanize_user" name="prompt_humanize_user" rows="4"
+                                style="width:100%; border:1px solid #334155; border-radius:4px; padding:8px; background:var(--bg-input); color:var(--text-primary); font-family:inherit;">{{ config.prompt_humanize_user }}</textarea>
+                        </div>
+                    </div>
+
+                    <h3 style="margin-top: 20px;">Summarize</h3>
+                    <div class="setting-item">
+                        <label for="prompt_summarize_sys">System Prompt</label>
+                        <div class="input-group">
+                            <textarea id="prompt_summarize_sys" name="prompt_summarize_sys" rows="3"
+                                style="width:100%; border:1px solid #334155; border-radius:4px; padding:8px; background:var(--bg-input); color:var(--text-primary); font-family:inherit;">{{ config.prompt_summarize_sys }}</textarea>
+                        </div>
+                    </div>
+                    <div class="setting-item">
+                        <label for="prompt_summarize_user">User Prompt</label>
+                        <div class="input-group">
+                            <textarea id="prompt_summarize_user" name="prompt_summarize_user" rows="4"
+                                style="width:100%; border:1px solid #334155; border-radius:4px; padding:8px; background:var(--bg-input); color:var(--text-primary); font-family:inherit;">{{ config.prompt_summarize_user }}</textarea>
+                        </div>
+                    </div>
+
+                    <h3 style="margin-top: 20px;">Grammar</h3>
+                    <div class="setting-item">
+                        <label for="prompt_grammar_sys">System Prompt</label>
+                        <div class="input-group">
+                            <textarea id="prompt_grammar_sys" name="prompt_grammar_sys" rows="3"
+                                style="width:100%; border:1px solid #334155; border-radius:4px; padding:8px; background:var(--bg-input); color:var(--text-primary); font-family:inherit;">{{ config.prompt_grammar_sys }}</textarea>
+                        </div>
+                    </div>
+                    <div class="setting-item">
+                        <label for="prompt_grammar_user">User Prompt</label>
+                        <div class="input-group">
+                            <textarea id="prompt_grammar_user" name="prompt_grammar_user" rows="4"
+                                style="width:100%; border:1px solid #334155; border-radius:4px; padding:8px; background:var(--bg-input); color:var(--text-primary); font-family:inherit;">{{ config.prompt_grammar_user }}</textarea>
+                        </div>
+                    </div>
+                </div>
+            </section>
         </main>
 
         <!-- Toast Notification -->
@@ -270,9 +344,23 @@
         // Store the current model value
         const currentModel = '{{ config.default_model }}';
 
+        function toggleProviderSettings() {
+            const provider = document.getElementById('aiProvider').value;
+            const openrouterSettings = document.getElementById('openrouterSettings');
+            const localAISettings = document.getElementById('localAISettings');
+
+            if (provider === 'local') {
+                openrouterSettings.style.display = 'none';
+                localAISettings.style.display = 'block';
+            } else {
+                openrouterSettings.style.display = 'block';
+                localAISettings.style.display = 'none';
+            }
+        }
+
         // Load free models from OpenRouter API
         async function loadFreeModels() {
-            const select = document.getElementById('defaultModel');
+            const select = document.getElementById('modelSelect');
             const refreshBtn = document.querySelector('.refresh-models-btn');
             const refreshIcon = document.getElementById('refreshIcon');
             const modelCount = document.getElementById('modelCount');
@@ -291,7 +379,7 @@
 
                 if (data.success && data.models) {
                     // Clear existing options
-                    select.innerHTML = '';
+                    select.innerHTML = '<option value="">Select from OpenRouter...</option>';
 
                     // Add models as options
                     data.models.forEach(model => {
@@ -353,13 +441,20 @@
                 upload_folder: document.getElementById('uploadFolder').value,
                 temp_folder: document.getElementById('tempFolder').value,
                 max_file_size: parseInt(document.getElementById('maxFileSize').value),
+                ai_provider: document.getElementById('aiProvider').value,
                 openrouter_api_key: document.getElementById('openrouterKey').value,
                 openrouter_endpoint: document.getElementById('openrouterEndpoint').value,
-                groq_api_key: document.getElementById('groqKey').value,
-                default_model: document.getElementById('defaultModel').value,
-                whisper_model: document.getElementById('whisperModel').value,
+                default_model: document.getElementById('defaultModelHidden').value,
+                local_endpoint: document.getElementById('localEndpoint').value,
+                local_model: document.getElementById('localModel').value,
                 auto_save_interval: parseInt(document.getElementById('autoSaveInterval').value),
-                theme: document.getElementById('theme').value
+                theme: document.getElementById('theme').value,
+                prompt_humanize_sys: document.getElementById('prompt_humanize_sys').value,
+                prompt_humanize_user: document.getElementById('prompt_humanize_user').value,
+                prompt_summarize_sys: document.getElementById('prompt_summarize_sys').value,
+                prompt_summarize_user: document.getElementById('prompt_summarize_user').value,
+                prompt_grammar_sys: document.getElementById('prompt_grammar_sys').value,
+                prompt_grammar_user: document.getElementById('prompt_grammar_user').value
             };
 
             const saveBtn = document.getElementById('saveBtn');
@@ -429,7 +524,7 @@
         }
 
         // Track changes
-        document.querySelectorAll('input, select').forEach(input => {
+        document.querySelectorAll('input, select, textarea').forEach(input => {
             input.addEventListener('change', () => {
                 document.getElementById('saveBtn').classList.add('has-changes');
             });

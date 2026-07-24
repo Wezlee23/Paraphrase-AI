@@ -30,13 +30,20 @@ DEFAULT_CONFIG = {
     'upload_folder': 'uploads',
     'temp_folder': 'temp_audio',
     'max_file_size': 100,
+    'ai_provider': 'openrouter',
     'openrouter_api_key': os.getenv('OPENROUTER_API_KEY', ''),
     'openrouter_endpoint': 'https://openrouter.ai/api/v1/chat/completions',
-    'groq_api_key': os.getenv('GROQ_API_KEY', ''),
     'default_model': 'meta-llama/llama-3.3-70b-instruct:free',
-    'whisper_model': 'base',
+    'local_endpoint': 'http://localhost:11434/v1/chat/completions',
+    'local_model': 'llama3',
     'auto_save_interval': 1,
-    'theme': 'dark'
+    'theme': 'dark',
+    'prompt_humanize_sys': "You are a professional academic editor specializing in refining AI-generated text for academic audiences.",
+    'prompt_humanize_user': "Rewrite this text to sound like it was written by an academic scholar. Use a formal, precise, and objective tone while ensuring high accuracy of the information. Avoid colloquialisms and maintain appropriate academic vocabulary. Keep all key information intact. Return only the rewritten text.",
+    'prompt_summarize_sys': "You are an expert summarizer who condenses long texts into clear, concise bullet points.",
+    'prompt_summarize_user': "Summarize this text into 3-7 key bullet points. Use simple language. Start each point with •",
+    'prompt_grammar_sys': "You are a professional editor who improves writing clarity, grammar, and style.",
+    'prompt_grammar_user': "Fix grammar, spelling, and improve clarity. Return only the improved text."
 }
 
 
@@ -155,136 +162,34 @@ def extract_text_from_file(filepath, file_type):
     return ''
 
 
-# ============================================
-# TRANSCRIPTION FUNCTIONS (FREE METHODS)
-# ============================================
-
-def extract_youtube_video_id(url):
-    """Extract video ID from various YouTube URL formats"""
-    patterns = [
-        r'(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})',
-        r'youtube\.com\/shorts\/([a-zA-Z0-9_-]{11})',
-    ]
-    for pattern in patterns:
-        match = re.search(pattern, url)
-        if match:
-            return match.group(1)
-    return None
-
-
-def get_youtube_transcript(video_url):
-    """Get transcript from YouTube using youtube-transcript-api (FREE)"""
-    try:
-        from youtube_transcript_api import YouTubeTranscriptApi
-        from youtube_transcript_api._errors import TranscriptsDisabled, NoTranscriptFound
-        
-        video_id = extract_youtube_video_id(video_url)
-        if not video_id:
-            return None, "Could not extract video ID from URL. Make sure it's a valid YouTube link."
-        
-        try:
-            # Simple approach: just get the transcript directly
-            transcript = YouTubeTranscriptApi.get_transcript(video_id, languages=['en', 'en-US', 'en-GB'])
-            
-            if transcript:
-                # Combine all text segments
-                full_text = ' '.join([entry['text'] for entry in transcript])
-                return full_text, None
-            
-            return None, "No transcript content found"
-            
-        except TranscriptsDisabled:
-            return None, "Transcripts are disabled for this video"
-        except NoTranscriptFound:
-            # Try to get any available transcript
-            try:
-                transcript_list = YouTubeTranscriptApi.list_transcripts(video_id)
-                for t in transcript_list:
-                    transcript = t.fetch()
-                    full_text = ' '.join([entry['text'] for entry in transcript])
-                    return full_text, None
-            except:
-                pass
-            return None, "No transcript available for this video. Try a video with captions enabled."
-        except Exception as e:
-            error_msg = str(e)
-            if "Video unavailable" in error_msg:
-                return None, "Video is unavailable or private"
-            return None, f"Could not get transcript: {error_msg}"
-            
-    except ImportError:
-        return None, "YouTube transcription requires youtube-transcript-api. Install with: pip install youtube-transcript-api"
-
-
-def transcribe_audio_with_whisper(filepath):
-    """Transcribe audio using local Whisper model (FREE, runs locally)"""
-    try:
-        import whisper
-        
-        # Load the base model (good balance of speed/accuracy)
-        model = whisper.load_model("base")
-        result = model.transcribe(filepath)
-        return result["text"], None
-        
-    except ImportError:
-        return None, "[Local transcription requires openai-whisper. Install with: pip install openai-whisper]"
-    except Exception as e:
-        return None, f"Transcription error: {str(e)}"
-
-
-def transcribe_with_free_api(filepath):
-    """Fallback: Use Groq's free Whisper API"""
-    groq_key = os.getenv("GROQ_API_KEY")
-    if not groq_key:
-        return None, "No transcription API configured. Install openai-whisper locally or add GROQ_API_KEY."
-    
-    try:
-        url = "https://api.groq.com/openai/v1/audio/transcriptions"
-        headers = {"Authorization": f"Bearer {groq_key}"}
-        
-        with open(filepath, 'rb') as audio_file:
-            files = {'file': audio_file}
-            data = {'model': 'whisper-large-v3'}
-            response = requests.post(url, headers=headers, files=files, data=data)
-        
-        if response.status_code == 200:
-            return response.json().get('text', ''), None
-        else:
-            return None, f"API error: {response.status_code}"
-    except Exception as e:
-        return None, f"API error: {str(e)}"
-
-
-def transcribe_audio(filepath):
-    """Main transcription function - tries multiple free methods"""
-    # Try local Whisper first (completely free, no API needed)
-    text, error = transcribe_audio_with_whisper(filepath)
-    if text:
-        return text, None
-    
-    # Fallback to Groq's free API if available
-    text, error2 = transcribe_with_free_api(filepath)
-    if text:
-        return text, None
-    
-    return None, error or error2
-
 
 # ============================================
 # AI HELPER FUNCTIONS
 # ============================================
 
 def call_openrouter_api(system_prompt, user_prompt, context=''):
-    """Generic function to call OpenRouter API with optional context"""
+    """Generic function to call OpenRouter API or local OpenAI-compatible endpoints with optional context"""
     config = get_config()
-    api_key = config.get('openrouter_api_key') or os.getenv("OPENROUTER_API_KEY")
-    url = config.get('openrouter_endpoint', 'https://openrouter.ai/api/v1/chat/completions')
-    model = config.get('default_model', 'meta-llama/llama-3.3-70b-instruct:free')
+    provider = config.get('ai_provider', 'openrouter')
+    
+    if provider == 'local':
+        api_key = "dummy"
+        url = config.get('local_endpoint', 'http://localhost:11434/v1/chat/completions')
+        model = config.get('local_model', 'llama3')
+    else:
+        api_key = config.get('openrouter_api_key') or os.getenv("OPENROUTER_API_KEY", "")
+        url = config.get('openrouter_endpoint', 'https://openrouter.ai/api/v1/chat/completions')
+        model = config.get('default_model', 'meta-llama/llama-3.3-70b-instruct:free')
     
     headers = {
-        "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json"
     }
+    
+    if api_key:
+        headers["Authorization"] = f"Bearer {api_key}"
+    else:
+        # Some local models (like LM Studio) might still expect a Bearer token format
+        headers["Authorization"] = "Bearer dummy"
     
     messages = [{"role": "system", "content": system_prompt}]
     if context:
@@ -296,62 +201,59 @@ def call_openrouter_api(system_prompt, user_prompt, context=''):
         "messages": messages
     }
     try:
-        response = requests.post(url, headers=headers, json=data)
+        response = requests.post(url, headers=headers, json=data, timeout=120)
         if response.status_code == 200:
             result = response.json()
             return result["choices"][0]["message"]["content"].strip()
         else:
-            return f"Error: Unable to process request (Status: {response.status_code})"
+            err_msg = f"Error: Unable to process request (Status: {response.status_code})"
+            if response.status_code == 404 and provider == 'local':
+                err_msg += f"\nHint: Ensure your local endpoint includes the full path (e.g., /v1/chat/completions if using Ollama's OpenAI compatibility layer). You entered: {url}"
+            else:
+                try:
+                    err_msg += f" - {response.json().get('error', response.text)}"
+                except:
+                    err_msg += f" - {response.text}"
+            return err_msg
+    except requests.exceptions.Timeout:
+        return "Error: The request timed out. Local models can take several minutes to generate a response depending on your hardware. Try a smaller model or check your server logs."
     except Exception as e:
         return f"Error: {str(e)}"
 
 
 def humanize(text, context=''):
-    system_prompt = "You are a professional content editor specializing in rewriting AI-generated text to sound natural and human."
-    user_prompt = f"""Rewrite this text to sound human-written. Use a natural, conversational tone with contractions. Keep all key information intact. Return only the rewritten text.
-
-Text: "{text}"
-"""
+    config = get_config()
+    system_prompt = config.get('prompt_humanize_sys', DEFAULT_CONFIG['prompt_humanize_sys'])
+    user_prompt_template = config.get('prompt_humanize_user', DEFAULT_CONFIG['prompt_humanize_user'])
+    if '{text}' in user_prompt_template:
+        user_prompt = user_prompt_template.replace('{text}', text)
+    else:
+        user_prompt = f"{user_prompt_template}\n\nText:\n{text}"
     return call_openrouter_api(system_prompt, user_prompt, context)
 
 
 def summarize_text(text, context=''):
-    system_prompt = "You are an expert summarizer who condenses long texts into clear, concise bullet points."
-    user_prompt = f"""Summarize this text into 3-7 key bullet points. Use simple language. Start each point with •
-
-Text: "{text}"
-"""
+    config = get_config()
+    system_prompt = config.get('prompt_summarize_sys', DEFAULT_CONFIG['prompt_summarize_sys'])
+    user_prompt_template = config.get('prompt_summarize_user', DEFAULT_CONFIG['prompt_summarize_user'])
+    if '{text}' in user_prompt_template:
+        user_prompt = user_prompt_template.replace('{text}', text)
+    else:
+        user_prompt = f"{user_prompt_template}\n\nText:\n{text}"
     return call_openrouter_api(system_prompt, user_prompt, context)
 
-
-def organize_notes(text, context=''):
-    system_prompt = "You are a study skills expert who organizes notes into structured, easy-to-review formats."
-    user_prompt = f"""Organize this text into structured study notes with:
-- Clear section headers (use ## for headers)
-- Bullet points for details
-- Key terms in **bold**
-
-Text: "{text}"
-"""
-    return call_openrouter_api(system_prompt, user_prompt, context)
 
 
 def improve_grammar(text, context=''):
-    system_prompt = "You are a professional editor who improves writing clarity, grammar, and style."
-    user_prompt = f"""Fix grammar, spelling, and improve clarity. Return only the improved text.
-
-Text: "{text}"
-"""
+    config = get_config()
+    system_prompt = config.get('prompt_grammar_sys', DEFAULT_CONFIG['prompt_grammar_sys'])
+    user_prompt_template = config.get('prompt_grammar_user', DEFAULT_CONFIG['prompt_grammar_user'])
+    if '{text}' in user_prompt_template:
+        user_prompt = user_prompt_template.replace('{text}', text)
+    else:
+        user_prompt = f"{user_prompt_template}\n\nText:\n{text}"
     return call_openrouter_api(system_prompt, user_prompt, context)
 
-
-def generate_citations(text, style="APA", context=''):
-    system_prompt = "You are an academic citation expert who formats sources in various citation styles."
-    user_prompt = f"""Extract sources from this text and format them in {style} style. If no sources found, say so.
-
-Text: "{text}"
-"""
-    return call_openrouter_api(system_prompt, user_prompt, context)
 
 
 # ============================================
@@ -432,137 +334,6 @@ def delete_file(file_id):
     return jsonify({'success': True})
 
 
-@app.route('/transcribe-url', methods=['POST'])
-def transcribe_url():
-    """Transcribe video from YouTube URL (FREE using youtube-transcript-api)"""
-    init_session()
-    
-    data = request.get_json()
-    video_url = data.get('url', '')
-    force_download = data.get('force_download', False)  # Force download even if captions exist
-    
-    if not video_url:
-        return jsonify({'error': 'No URL provided'}), 400
-    
-    # Check if it's a YouTube URL
-    if 'youtube.com' in video_url or 'youtu.be' in video_url:
-        # First try to get existing captions (fastest method)
-        if not force_download:
-            transcript, error = get_youtube_transcript(video_url)
-            if transcript:
-                # Add to context
-                session['context'] = session.get('context', '') + f"\n\n--- From YouTube Video ---\n{transcript[:3000]}"
-                session.modified = True
-                return jsonify({'success': True, 'transcript': transcript, 'method': 'captions'})
-        
-        # If captions not available or force_download is True, download and transcribe
-        transcript, error = download_and_transcribe_youtube(video_url)
-        if transcript:
-            session['context'] = session.get('context', '') + f"\n\n--- From YouTube Video (Whisper) ---\n{transcript[:3000]}"
-            session.modified = True
-            return jsonify({'success': True, 'transcript': transcript, 'method': 'whisper'})
-        else:
-            return jsonify({'error': error}), 400
-    else:
-        return jsonify({'error': 'Currently only YouTube URLs are supported for transcription'}), 400
-
-
-def download_and_transcribe_youtube(video_url):
-    """Download YouTube audio and transcribe using Whisper (for videos without captions)"""
-    audio_filepath = None
-    try:
-        # Generate unique filename for the audio
-        audio_filename = f"yt_audio_{uuid.uuid4().hex}.mp3"
-        audio_filepath = os.path.join(app.config['TEMP_FOLDER'], audio_filename)
-        
-        # Download audio using yt-dlp
-        result = subprocess.run(
-            [
-                'yt-dlp', 
-                '-x',  # Extract audio
-                '--audio-format', 'mp3',
-                '--audio-quality', '0',  # Best quality
-                '-o', audio_filepath,
-                '--no-playlist',  # Don't download playlists
-                '--quiet',  # Less verbose
-                video_url
-            ],
-            capture_output=True,
-            text=True,
-            timeout=300  # 5 minute timeout
-        )
-        
-        if result.returncode != 0:
-            return None, f"Failed to download audio: {result.stderr}"
-        
-        # yt-dlp might add extension, check for the file
-        if not os.path.exists(audio_filepath):
-            # Try with .mp3 extension if yt-dlp added it
-            if os.path.exists(audio_filepath + '.mp3'):
-                audio_filepath = audio_filepath + '.mp3'
-            else:
-                # Search for the file
-                for f in os.listdir(app.config['TEMP_FOLDER']):
-                    if f.startswith(f"yt_audio_{audio_filename.split('_')[2].split('.')[0]}"):
-                        audio_filepath = os.path.join(app.config['TEMP_FOLDER'], f)
-                        break
-        
-        if not os.path.exists(audio_filepath):
-            return None, "Could not find downloaded audio file"
-        
-        # Transcribe the audio
-        transcript, error = transcribe_audio(audio_filepath)
-        
-        if transcript:
-            return transcript, None
-        else:
-            return None, error or "Transcription failed"
-            
-    except subprocess.TimeoutExpired:
-        return None, "Download timed out. The video might be too long."
-    except FileNotFoundError:
-        return None, "yt-dlp not found. Install it with: pip install yt-dlp"
-    except Exception as e:
-        return None, f"Error: {str(e)}"
-    finally:
-        # Cleanup: remove temporary audio file
-        if audio_filepath and os.path.exists(audio_filepath):
-            try:
-                os.remove(audio_filepath)
-            except:
-                pass
-
-
-@app.route('/transcribe-file/<file_id>', methods=['POST'])
-def transcribe_file(file_id):
-    """Transcribe uploaded audio/video file"""
-    init_session()
-    files = session.get('files', [])
-    
-    for i, f in enumerate(files):
-        if f['id'] == file_id:
-            filepath = os.path.join(app.config['UPLOAD_FOLDER'], f['stored_name'])
-            
-            if not os.path.exists(filepath):
-                return jsonify({'error': 'File not found'}), 404
-            
-            transcript, error = transcribe_audio(filepath)
-            
-            if transcript:
-                # Update file's text content
-                files[i]['text_content'] = transcript
-                session['files'] = files
-                
-                # Add to context
-                session['context'] = session.get('context', '') + f"\n\n--- Transcribed from {f['original_name']} ---\n{transcript[:2000]}"
-                session.modified = True
-                
-                return jsonify({'success': True, 'transcript': transcript})
-            else:
-                return jsonify({'error': error}), 400
-    
-    return jsonify({'error': 'File not found'}), 404
-
 
 @app.route('/process', methods=['POST'])
 def process_text():
@@ -572,8 +343,6 @@ def process_text():
     tool = data.get('tool', 'paraphrase')
     text = data.get('text', '')
     append_to_draft = data.get('append_to_draft', False)
-    citation_style = data.get('citation_style', 'APA')
-    
     context = session.get('context', '')
     
     # Process based on tool
@@ -581,12 +350,8 @@ def process_text():
         result = humanize(text, context)
     elif tool == 'summarize':
         result = summarize_text(text, context)
-    elif tool == 'notes':
-        result = organize_notes(text, context)
     elif tool == 'grammar':
         result = improve_grammar(text, context)
-    elif tool == 'citations':
-        result = generate_citations(text, citation_style, context)
     else:
         result = text
     
@@ -734,13 +499,20 @@ def save_settings():
             'upload_folder': data.get('upload_folder', 'uploads'),
             'temp_folder': data.get('temp_folder', 'temp_audio'),
             'max_file_size': max(1, min(500, int(data.get('max_file_size', 100)))),
+            'ai_provider': data.get('ai_provider', 'openrouter'),
             'openrouter_api_key': data.get('openrouter_api_key', ''),
             'openrouter_endpoint': data.get('openrouter_endpoint', 'https://openrouter.ai/api/v1/chat/completions'),
-            'groq_api_key': data.get('groq_api_key', ''),
             'default_model': data.get('default_model', 'mistralai/mistral-7b-instruct:free'),
-            'whisper_model': data.get('whisper_model', 'base'),
+            'local_endpoint': data.get('local_endpoint', 'http://localhost:11434/v1/chat/completions'),
+            'local_model': data.get('local_model', 'llama3'),
             'auto_save_interval': max(1, min(60, int(data.get('auto_save_interval', 1)))),
-            'theme': data.get('theme', 'dark')
+            'theme': data.get('theme', 'dark'),
+            'prompt_humanize_sys': data.get('prompt_humanize_sys', DEFAULT_CONFIG['prompt_humanize_sys']),
+            'prompt_humanize_user': data.get('prompt_humanize_user', DEFAULT_CONFIG['prompt_humanize_user']),
+            'prompt_summarize_sys': data.get('prompt_summarize_sys', DEFAULT_CONFIG['prompt_summarize_sys']),
+            'prompt_summarize_user': data.get('prompt_summarize_user', DEFAULT_CONFIG['prompt_summarize_user']),
+            'prompt_grammar_sys': data.get('prompt_grammar_sys', DEFAULT_CONFIG['prompt_grammar_sys']),
+            'prompt_grammar_user': data.get('prompt_grammar_user', DEFAULT_CONFIG['prompt_grammar_user'])
         }
         
         # Create folders if they don't exist
